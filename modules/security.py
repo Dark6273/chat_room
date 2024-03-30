@@ -28,7 +28,10 @@ class AESCipher:
         ciphertext = ciphertext[AES.block_size:]
         cipher = AES.new(self.key, AES.MODE_CBC, iv)
         decrypted_text = unpad(cipher.decrypt(ciphertext), AES.block_size)
-        return decrypted_text.decode()
+        return decrypted_text.decode('utf-8', 'ignore')
+
+    def __repr__(self):
+        return str(self.key.hex())
 
 
 if __name__ == '__main__':

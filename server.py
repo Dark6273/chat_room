@@ -1,5 +1,7 @@
 import socket
 from threading import Thread
+from time import sleep
+
 import database
 from modules import security
 
@@ -100,6 +102,7 @@ class Server:
         msg = client.recv(1024)
         username = cipher.decrypt_text(msg).replace("Hello ", "")
         self.broadcast(f"{username} join the chat room.")
+        sleep(0.1)
 
         client.send(cipher.encrypt_text(f"Hi {username}, welcome to the chat room."))
         self.handle_command(client, username, cipher)
@@ -110,10 +113,8 @@ class Server:
             message = cipher.decrypt_text(encrypted_text)
 
             if message == "Please send the list of attendees.":
-                print(self.connections)
                 response = "Here is the list of attendees:\n"
                 response += ",".join(self.connections.keys())
-                print(response)
 
                 encrypted_text = cipher.encrypt_text(response)
                 client.send(encrypted_text)
@@ -140,6 +141,7 @@ class Server:
 
             elif message.startswith("Bye."):
                 self.connections.pop(username)
+                client.send(cipher.encrypt_text("close!"))
                 client.close()
 
                 self.broadcast(f"{username} left the chat room.")
@@ -153,10 +155,10 @@ class Server:
             ...
 
     def broadcast(self, message):
-        for connection in self.connections.values():
+        for user, connection in self.connections.items():
             try:
-                message = connection['cipher'].encrypt_text(message)
-                connection['client'].send(message)
+                msg = connection['cipher'].encrypt_text(message)
+                connection['client'].send(msg)
             except:
                 ...
 

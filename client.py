@@ -1,4 +1,6 @@
 import socket
+from time import sleep
+
 from modules import security
 from threading import Thread
 
@@ -58,9 +60,11 @@ class Client:
             self.login_or_register()
 
     def handel_connection(self):
-        Thread(target=self.get_message).start()
+        thread = Thread(target=self.get_message)
+        thread.start()
 
         while True:
+            sleep(0.5)
             command = input("Enter command: ").lower()
 
             if command == "\help":
@@ -87,9 +91,9 @@ class Client:
 
             elif command == "bye":
                 self.socket.send(self.cipher.encrypt_text("Bye."))
-                self.socket.close()
+                exit(0)
             else:
-                print("Wrone input")
+                print("Wrong input")
 
     def board(self):
         board = """
@@ -105,9 +109,16 @@ Bye -> exit from chat room
         while True:
             data = self.socket.recv(1024)
 
-            if data:
-                message = self.cipher.decrypt_text(data)
-                print(message)
+            if not data:
+                continue
+
+            message = self.cipher.decrypt_text(data)
+
+            if message == "close!":
+                self.socket.close()
+                return
+
+            print(message)
 
     def __del__(self):
         self.socket.close()
