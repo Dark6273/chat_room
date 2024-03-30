@@ -31,11 +31,17 @@ def login_user(username: str) -> User | None:
     return user
 
 
-def add_message(message: str, sender: User, receiver: User = None):
-    if receiver:
-        msg = UserMessage(message=message, sender=sender, receiver=receiver)
+def add_message(message: str, sender: str, receivers: list = None):
+    sender = User.objects(username=sender).first()
+
+    if receivers:
+        rs = list()
+        for receiver in receivers:
+            rs.append(User.objects(username=receiver).first())
+
+        msg = UserMessage(message=message, sender=sender, receiver=rs)
         msg.save()
-        add_log(f"message created successfully, sender: {sender.id}, receiver: {receiver.id}")
+        add_log(f"message created successfully, sender: {sender.id}, receiver: {rs}")
         return
 
     msg = Message(message=message, sender=sender)

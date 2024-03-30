@@ -1,8 +1,8 @@
 import socket
+from threading import Thread
 from time import sleep
 
 from modules import security
-from threading import Thread
 
 
 class Client:
@@ -62,6 +62,10 @@ class Client:
     def handel_connection(self):
         thread = Thread(target=self.get_message)
         thread.start()
+
+        sleep(0.2)
+        msg = self.cipher.encrypt_text("Please send the list of attendees.")
+        self.socket.send(msg)
 
         while True:
             sleep(0.5)

@@ -45,7 +45,7 @@ class BaseMessage(Document):
 
 
 class UserMessage(BaseMessage):
-    receiver = ReferenceField(User)
+    receiver = ListField(ReferenceField(User))
 
     def __str__(self):
         return f"from: {self.sender}, to: {self.receiver}, message: {self.message[:10]}"
@@ -64,7 +64,9 @@ if __name__ == '__main__':
 
     # message = UserMessage(sender=user, receiver=user, message='hello world')
     # message.save()
-    message = UserMessage.objects[0]
-    print(message)
+    # message = UserMessage.objects[0]
+    # print(message)
+    message = Message(sender="dark", message="hello world")
+    message.save()
 
 

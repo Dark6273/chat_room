@@ -5,7 +5,6 @@ from time import sleep
 import database
 from modules import security
 
-
 HOST = "127.0.0.1"
 PORT = 15000
 LISTEN = 2
@@ -30,6 +29,7 @@ class Server:
             database.add_log("TCP server successfully activated on address: %s:%s" % (host, port))
         except Exception as e:
             self.server.close()
+            database.add_log(str(e), "critical", "core")
             raise e
 
         self.listen()
@@ -40,10 +40,12 @@ class Server:
                 client, addr = self.server.accept()
                 print(f'Got connection from {addr}')
                 database.add_log(f'Got connection from {addr}')
+
                 Thread(target=self.login_or_register_client, args=(client, addr)).start()
         except KeyboardInterrupt:
             self.__del__()
         except Exception as e:
+            database.add_log(str(e), "warning", "core")
             print(e)
 
     def login_or_register_client(self, client, addr):
@@ -108,11 +110,13 @@ class Server:
         self.handle_command(client, username, cipher)
 
     def handle_command(self, client, username, cipher):
+        command = None
         while True:
             encrypted_text = client.recv(BUFFER_SIZE)
             message = cipher.decrypt_text(encrypted_text)
 
             if message == "Please send the list of attendees.":
+                command = "user-list"
                 response = "Here is the list of attendees:\n"
                 response += ",".join(self.connections.keys())
 
@@ -120,20 +124,24 @@ class Server:
                 client.send(encrypted_text)
 
             elif message.startswith("Public message,"):
+                command = "public-message"
                 data = message.split("\r\n")
                 message_len = data[0].replace("Public message, length=", "").replace(":", "")
                 message_body = data[1]
 
+                database.add_message(message=message_body, sender=username)
                 response = f"Public message from {username}, length: {message_len}\r\n{message_body}"
                 self.broadcast(response)
 
             elif message.startswith("Private message,"):
+                command = "private-message"
                 data = message.split("\r\n")
                 message_body = data[1]
                 data = data[0].split(" to ")
                 message_len = data[0].replace("Private message, length=", "")
                 targets = data[1].replace(":", "").split(",")
 
+                database.add_message(message=message_body, sender=username, receivers=targets)
                 response = f"Private message, length: {message_len} from {username} to {','.join(targets)}:\r\n{message_body}"
 
                 for target in targets:
@@ -145,24 +153,28 @@ class Server:
                 client.close()
 
                 self.broadcast(f"{username} left the chat room.")
+                database.add_log(f"{username} left the chat room", "info", "handle_command")
                 return
+
+            database.add_log(f"Received message from <{username}> with command: <{command}>", "info", "handle_command")
 
     def send_private_message(self, message, to):
         try:
             message = self.connections[to]['cipher'].encrypt_text(message)
             self.connections[to]['client'].send(message)
-        except:
-            ...
+        except Exception as e:
+            database.add_log(f"{e}", "error", "private_message")
 
     def broadcast(self, message):
         for user, connection in self.connections.items():
             try:
                 msg = connection['cipher'].encrypt_text(message)
                 connection['client'].send(msg)
-            except:
-                ...
+            except Exception as e:
+                database.add_log(f"{e}", "error", "broadcast")
 
     def __del__(self):
+        database.add_log("Server closed", "info", "core")
         self.server.close()
 
 
