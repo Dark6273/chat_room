@@ -93,6 +93,11 @@ class Client:
                 msg = self.cipher.encrypt_text(f"Private message, length={length} to {targets}:\r\n{message}")
                 self.socket.send(msg)
 
+            elif command == "history":
+                count = input("How many messages? ")
+                msg = self.cipher.encrypt_text(f"History {count}")
+                self.socket.send(msg)
+
             elif command == "bye":
                 self.socket.send(self.cipher.encrypt_text("Bye."))
                 exit(0)

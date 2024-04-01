@@ -47,3 +47,8 @@ def add_message(message: str, sender: str, receivers: list = None):
     msg = Message(message=message, sender=sender)
     msg.save()
     add_log(f"message created successfully, sender: {sender.id}")
+
+
+def get_messages(limit: int = 10) -> list[Message]:
+    messages = Message.objects().order_by('-created_at').limit(limit)
+    return messages

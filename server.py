@@ -114,6 +114,7 @@ class Server:
         while True:
             encrypted_text = client.recv(BUFFER_SIZE)
             message = cipher.decrypt_text(encrypted_text)
+            print(f"{username} =>" + message)
 
             if message == "Please send the list of attendees.":
                 command = "user-list"
@@ -146,6 +147,30 @@ class Server:
 
                 for target in targets:
                     self.send_private_message(response, target)
+
+            elif message.startswith("History"):
+                count = message.replace("History ", "")
+
+                try:
+                    count = int(count)
+                except:
+                    response = "Invalid format for request!"
+                    client.send(cipher.encrypt(response))
+                    continue
+
+                if not 1 < count < 20:
+                    response = "Invalid count, must be between 1 and 20"
+                    client.send(cipher.encrypt_text(response))
+                    continue
+
+                messages = database.get_messages(count)
+                response = ""
+
+                for message in messages:
+                    msg = message.message
+                    response += f"History message from {message.sender.username}, length: {len(msg)}\r\n{msg}\n"
+
+                client.send(cipher.encrypt_text(response))
 
             elif message.startswith("Bye."):
                 self.connections.pop(username)
